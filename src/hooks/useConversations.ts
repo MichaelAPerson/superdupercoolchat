@@ -148,15 +148,18 @@ export function useCreateConversation() {
 
       if (convError) throw convError;
 
-      // Add participants
-      const { error: participantsError } = await supabase
+      // Add participants (two-step insert to satisfy RLS checks)
+      const { error: addSelfError } = await supabase
         .from('conversation_participants')
-        .insert([
-          { conversation_id: conversation.id, user_id: user.id },
-          { conversation_id: conversation.id, user_id: otherUserId },
-        ]);
+        .insert({ conversation_id: conversation.id, user_id: user.id });
 
-      if (participantsError) throw participantsError;
+      if (addSelfError) throw addSelfError;
+
+      const { error: addOtherError } = await supabase
+        .from('conversation_participants')
+        .insert({ conversation_id: conversation.id, user_id: otherUserId });
+
+      if (addOtherError) throw addOtherError;
 
       return conversation.id;
     },
