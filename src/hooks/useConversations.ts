@@ -113,7 +113,7 @@ export function useCreateConversation() {
     mutationFn: async (otherUserId: string) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Check if conversation already exists
+      // Check if conversation already exists between these two users
       const { data: existingParticipations } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
@@ -139,29 +139,14 @@ export function useCreateConversation() {
         }
       }
 
-      // Create new conversation
-      const { data: conversation, error: convError } = await supabase
-        .from('conversations')
-        .insert({})
-        .select()
-        .single();
+      // Create new conversation using RPC (bypasses RLS safely)
+      const { data, error } = await supabase.rpc('create_direct_conversation', {
+        _other_user_id: otherUserId,
+      });
 
-      if (convError) throw convError;
+      if (error) throw error;
 
-      // Add participants (two-step insert to satisfy RLS checks)
-      const { error: addSelfError } = await supabase
-        .from('conversation_participants')
-        .insert({ conversation_id: conversation.id, user_id: user.id });
-
-      if (addSelfError) throw addSelfError;
-
-      const { error: addOtherError } = await supabase
-        .from('conversation_participants')
-        .insert({ conversation_id: conversation.id, user_id: otherUserId });
-
-      if (addOtherError) throw addOtherError;
-
-      return conversation.id;
+      return data as string;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
