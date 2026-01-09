@@ -29,8 +29,16 @@ export default function NewConversationDialog({
       const conversationId = await createConversation.mutateAsync(user.id);
       toast.success(`Started conversation with ${user.username || user.email}`);
       onConversationCreated(conversationId);
-    } catch (error) {
-      toast.error('Failed to create conversation');
+    } catch (error: unknown) {
+      // Useful for debugging in development; avoid logging sensitive info.
+      console.error('Failed to create conversation', error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error && 'message' in error
+            ? String((error as any).message)
+            : 'Failed to create conversation';
+      toast.error(message);
     }
   };
 
