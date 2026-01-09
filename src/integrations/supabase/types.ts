@@ -132,6 +132,10 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: number
       }
+      create_direct_conversation: {
+        Args: { _other_user_id: string }
+        Returns: string
+      }
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
